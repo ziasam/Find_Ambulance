@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "118012753717",
+    "project_id": "pick-me-up-rebuild",
+    "storage_bucket": "pick-me-up-rebuild.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:118012753717:android:aa31c1faa9f46cdc1f3e7c",
+        "android_client_info": {
+          "package_name": "com.brainfluence.pickmeuprebuild"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "118012753717-0d1u505ugqljl0coar0h8h36ttkqlabt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.brainfluence.pickmeuprebuild",
+            "certificate_hash": "24b7e8d537d436d3b06ba406b91db78896a4b6a5"
+          }
+        },
+        {
+          "client_id": "118012753717-ag3uqpneqsg26qsu7u9dihqamlsg00re.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbrhY-8MPxpui-GSGJD5JODmtZq0iu9yw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "118012753717-ag3uqpneqsg26qsu7u9dihqamlsg00re.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".LoginActivity"
+    >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_margin="20dp">
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginTop="100dp"
+
+            app:srcCompat="@drawable/ambulance2"
+            android:layout_gravity="center_horizontal"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="20dp"
+            android:layout_marginTop="-15dp"
+            >
+
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:paddingRight="5dp"
+                android:text="Call"
+                android:textColor="@color/black"
+                android:textSize="24dp"
+                android:textStyle="bold"
+                android:textAlignment="textEnd"
+                android:gravity="end" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1.5"
+                android:layout_height="wrap_content"
+                android:text=" Ambulance"
+                android:textColor="#EC0909"
+                android:textSize="24dp"
+                android:textStyle="bold"
+                android:textAlignment="textStart"
+                android:gravity="start" />
+        </LinearLayout>
+
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/email"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter Your Email Address"
+            app:startIconDrawable="@drawable/ic_baseline_email_24"
+            android:layout_marginBottom="10dp"
+            app:boxStrokeWidth="1dp"
+            app:boxStrokeWidthFocused="1dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/emailInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                />
+
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/password"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter Your Password"
+            app:startIconDrawable="@drawable/ic_baseline_lock_open_24"
+            android:layout_marginBottom="20dp"
+            app:boxStrokeWidth="1dp"
+            app:boxStrokeWidthFocused="1dp"
+            app:endIconMode="password_toggle">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/passwordInput"
+                android:inputType="textPassword"
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                />
+
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/login"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Login"
+            android:textSize="18dp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-black"
+            app:backgroundTint="@null"
+            android:background="@drawable/button_background_filled"
+            android:textColor="@color/white"
+            app:layout_constraintTop_toBottomOf="@+id/password"
+            android:layout_marginBottom="30dp"/>
+
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Don't have an account?"
+            android:textAlignment="center"
+            android:gravity="center_horizontal"
+            android:textStyle="bold"
+            android:textSize="18dp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="20dp"/>
+
+        <Button
+            android:id="@+id/register"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:backgroundTint="@null"
+            android:background="@drawable/button_background_outlined"
+            android:text="Create New Account"
+            android:textAllCaps="false"
+            android:textColor="@color/sweet_red"
+            android:fontFamily="sans-serif-black"
+            android:textSize="18dp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toBottomOf="@+id/login" />
+
+
+
+    </LinearLayout>
+</ScrollView>
