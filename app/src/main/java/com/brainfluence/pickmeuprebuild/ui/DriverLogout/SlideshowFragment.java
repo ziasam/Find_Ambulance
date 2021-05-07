@@ -1,4 +1,4 @@
-package com.brainfluence.pickmeuprebuild.ui.slideshow;
+package com.brainfluence.pickmeuprebuild.ui.DriverLogout;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;

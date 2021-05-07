@@ -1,4 +1,4 @@
-package com.brainfluence.pickmeuprebuild;
+package com.brainfluence.pickmeuprebuild.services;
 
 import android.location.Location;
 import android.os.AsyncTask;

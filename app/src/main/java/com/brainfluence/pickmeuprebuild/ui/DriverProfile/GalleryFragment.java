@@ -1,4 +1,4 @@
-package com.brainfluence.pickmeuprebuild.ui.gallery;
+package com.brainfluence.pickmeuprebuild.ui.DriverProfile;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;

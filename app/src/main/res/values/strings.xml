@@ -15,4 +15,5 @@
     <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">
         AIzaSyAEPaSRlmeX3tfBK_jJU2VgkKrhLR67Pg4
     </string>
+    <string name="title_activity_driver_home">DriverHomeActivity</string>
 </resources>

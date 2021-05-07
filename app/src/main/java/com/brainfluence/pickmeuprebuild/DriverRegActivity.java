@@ -30,8 +30,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.messaging.FirebaseMessaging;
 
-public class CustomerRegActivity extends AppCompatActivity {
-    private LinearLayout diver , customer;
+public class DriverRegActivity extends AppCompatActivity {
+    private LinearLayout diver,customer;
     private TextInputLayout email,password,name,phoneNumber;
     private TextInputEditText emailInput,passwordInput,nameInput,phoneNumberInput;
     private Button register;
@@ -44,7 +44,7 @@ public class CustomerRegActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_customer_reg);
+        setContentView(R.layout.activity_diver_reg);
 
         diver = findViewById(R.id.driver);
         customer = findViewById(R.id.customer);
@@ -79,10 +79,10 @@ public class CustomerRegActivity extends AppCompatActivity {
                     }
                 });
 
-        diver.setOnClickListener(new View.OnClickListener() {
+        customer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(CustomerRegActivity.this, DriverRegActivity.class));
+                startActivity(new Intent(DriverRegActivity.this,CustomerRegActivity.class));
             }
         });
 
@@ -94,9 +94,9 @@ public class CustomerRegActivity extends AppCompatActivity {
                     return;
                 }
 
-                progressDialog = new ProgressDialog(CustomerRegActivity.this);
+                progressDialog = new ProgressDialog(DriverRegActivity.this);
                 progressDialog.setMessage("Please wait..."); // Setting Message
-                progressDialog.setTitle("Registering Passenger"); // Setting Title
+                progressDialog.setTitle("Registering Driver"); // Setting Title
                 progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER); // Progress Dialog Style Spinner
                 progressDialog.show(); // Display Progress Dialog
                 progressDialog.setCancelable(false);
@@ -104,7 +104,7 @@ public class CustomerRegActivity extends AppCompatActivity {
 
 
                 mAuth.createUserWithEmailAndPassword(emailInput.getText().toString().trim(), passwordInput.getText().toString().trim())
-                        .addOnCompleteListener(CustomerRegActivity.this, new OnCompleteListener<AuthResult>() {
+                        .addOnCompleteListener(DriverRegActivity.this, new OnCompleteListener<AuthResult>() {
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
                                 if (task.isSuccessful()) {
@@ -119,7 +119,7 @@ public class CustomerRegActivity extends AppCompatActivity {
                                             passwordInput.getText().toString().trim(),
                                             token,
                                             null,
-                                            "passenger",
+                                            "driver",
                                             userId.getUid().toString().trim()
                                     );
 
@@ -127,7 +127,7 @@ public class CustomerRegActivity extends AppCompatActivity {
                                         @Override
                                         public void onSuccess(Void aVoid) {
                                             progressDialog.dismiss();
-                                            AlertDialog.Builder builder=new AlertDialog.Builder(CustomerRegActivity.this);
+                                            AlertDialog.Builder builder=new AlertDialog.Builder(DriverRegActivity.this);
                                             builder.setCancelable(false);
                                             builder.setIcon(R.drawable.ic_baseline_info_24);
                                             builder.setTitle("Registration Successful");
@@ -137,7 +137,7 @@ public class CustomerRegActivity extends AppCompatActivity {
 
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which){
-                                                    startActivity(new Intent(CustomerRegActivity.this,LoginActivity.class));
+                                                    startActivity(new Intent(DriverRegActivity.this,LoginActivity.class));
                                                     finish();
                                                     dialog.dismiss();
                                                 }
@@ -150,7 +150,7 @@ public class CustomerRegActivity extends AppCompatActivity {
                                         @Override
                                         public void onFailure(@NonNull Exception e) {
                                             progressDialog.dismiss();
-                                            AlertDialog.Builder builder=new AlertDialog.Builder(CustomerRegActivity.this);
+                                            AlertDialog.Builder builder=new AlertDialog.Builder(DriverRegActivity.this);
                                             builder.setCancelable(true);
                                             builder.setIcon(R.drawable.ic_baseline_info_24);
                                             builder.setTitle("Registration Failed");
@@ -178,7 +178,7 @@ public class CustomerRegActivity extends AppCompatActivity {
                                     catch (FirebaseAuthWeakPasswordException weakPassword)
                                     {
                                         progressDialog.dismiss();
-                                        AlertDialog.Builder builder=new AlertDialog.Builder(CustomerRegActivity.this);
+                                        AlertDialog.Builder builder=new AlertDialog.Builder(DriverRegActivity.this);
                                         builder.setCancelable(true);
                                         builder.setIcon(R.drawable.ic_baseline_info_24);
                                         builder.setTitle("WeakPassword Error");
@@ -199,7 +199,7 @@ public class CustomerRegActivity extends AppCompatActivity {
                                     catch (FirebaseAuthInvalidCredentialsException malformedEmail)
                                     {
                                         progressDialog.dismiss();
-                                        AlertDialog.Builder builder=new AlertDialog.Builder(CustomerRegActivity.this);
+                                        AlertDialog.Builder builder=new AlertDialog.Builder(DriverRegActivity.this);
                                         builder.setCancelable(true);
                                         builder.setIcon(R.drawable.ic_baseline_info_24);
                                         builder.setTitle("Validation Error");
@@ -219,7 +219,7 @@ public class CustomerRegActivity extends AppCompatActivity {
                                     catch (FirebaseAuthUserCollisionException existEmail)
                                     {
                                         progressDialog.dismiss();
-                                        AlertDialog.Builder builder=new AlertDialog.Builder(CustomerRegActivity.this);
+                                        AlertDialog.Builder builder=new AlertDialog.Builder(DriverRegActivity.this);
                                         builder.setCancelable(true);
                                         builder.setIcon(R.drawable.ic_baseline_info_24);
                                         builder.setTitle("ExistEmail Error");
@@ -239,7 +239,7 @@ public class CustomerRegActivity extends AppCompatActivity {
                                     catch (Exception e)
                                     {
                                         progressDialog.dismiss();
-                                        AlertDialog.Builder builder=new AlertDialog.Builder(CustomerRegActivity.this);
+                                        AlertDialog.Builder builder=new AlertDialog.Builder(DriverRegActivity.this);
                                         builder.setCancelable(true);
                                         builder.setIcon(R.drawable.ic_baseline_info_24);
                                         builder.setTitle("Registration Failed");
@@ -261,12 +261,9 @@ public class CustomerRegActivity extends AppCompatActivity {
                             }
                         });
 
-
-
             }
         });
     }
-
 
     private boolean validatePass() {
         String val = passwordInput.getText().toString();
@@ -306,7 +303,6 @@ public class CustomerRegActivity extends AppCompatActivity {
             return true;
         }
     }
-
 
     private boolean validateEmail() {
         String val = emailInput.getText().toString();
