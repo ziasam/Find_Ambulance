@@ -1,9 +1,12 @@
 package com.brainfluence.pickmeuprebuild.services;
 
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import com.brainfluence.pickmeuprebuild.R;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -86,7 +89,7 @@ public class GetNearbyPlacesData extends AsyncTask<Object, String, String> {
 
         markerOptions.position(nearest);
         markerOptions.title(nearestPlaceName + " : "+ nearestVicinity);
-        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
 
         mMap.addMarker(markerOptions);
         mMap.moveCamera(CameraUpdateFactory.newLatLng(nearest));

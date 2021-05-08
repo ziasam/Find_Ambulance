@@ -1,25 +1,24 @@
-package com.brainfluence.pickmeuprebuild.ui.DriverHome;
+package com.brainfluence.pickmeuprebuild.ui.Home;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.RelativeLayout;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -29,7 +28,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.brainfluence.pickmeuprebuild.HomeActivity;
+import com.brainfluence.pickmeuprebuild.DriverRegActivity;
+import com.brainfluence.pickmeuprebuild.LoginActivity;
+import com.brainfluence.pickmeuprebuild.model.PassengerRequest;
 import com.brainfluence.pickmeuprebuild.model.User;
 import com.brainfluence.pickmeuprebuild.services.GetNearbyPlacesData;
 import com.brainfluence.pickmeuprebuild.R;
@@ -60,23 +61,17 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.karumi.dexter.Dexter;
-import com.karumi.dexter.PermissionToken;
-import com.karumi.dexter.listener.PermissionDeniedResponse;
-import com.karumi.dexter.listener.PermissionGrantedResponse;
-import com.karumi.dexter.listener.PermissionRequest;
-import com.karumi.dexter.listener.single.PermissionListener;
 
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.LinkedTransferQueue;
 
 import es.dmoral.toasty.Toasty;
 
@@ -104,14 +99,17 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     private String accountType;
     private GoogleApiClient mGooleApiClient;
     private FirebaseDatabase firebaseDatabase;
-    private DatabaseReference databaseReference, databaseReferenceGetDriverInfo;
-    private String userId;
-    private LatLng pickupLocation;
+    private DatabaseReference databaseReference, databaseReferenceGetDriverInfo,databaseReferenceDriverWrite;
+    private String userId,phoneNumber,name;
+    private LatLng pickupLocation,driverCurrentLocation,passengerCurrentLocation,passengerDestinationLocation;
     private int radius, limit;
     private Boolean driverFound;
     private String driverId;
-    private ValueEventListener listener;
+    private ValueEventListener listener,listener1;
     private Marker driverMarker;
+    private Button callAmbulance;
+    private ProgressDialog progressDialog,progressDialog1;
+    private Boolean buttonPressed,gotRequest;
 
     @Override
     public void onDestroy() {
@@ -122,6 +120,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         if (accountType.equals("driver")) {
             GeoFire geoFire = new GeoFire(databaseReference);
             geoFire.removeLocation(userId);
+            databaseReferenceDriverWrite.removeEventListener(listener1);
         } else {
             databaseReferenceGetDriverInfo.removeEventListener(listener);
         }
@@ -172,8 +171,9 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         View root = inflater.inflate(R.layout.fragment_home, container, false);
         sharedPref = getActivity().getSharedPreferences(SHARED_PREFS, Context.MODE_PRIVATE);
         accountType = sharedPref.getString(ACCOUNT_TYPE,"passenger");
+        name = sharedPref.getString(USER_NAME,"user");
         userId = sharedPref.getString(UID,"123");
-        Log.d("usertype", "onCreateView: "+accountType);
+        callAmbulance = root.findViewById(R.id.callAmbulance);
         mGooleApiClient = new GoogleApiClient.Builder(getContext())
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
@@ -183,12 +183,48 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         firebaseDatabase = FirebaseDatabase.getInstance();
         databaseReference = firebaseDatabase.getReference("availableDrivers");
         databaseReferenceGetDriverInfo = firebaseDatabase.getReference("users");
+        callAmbulance.setVisibility(View.INVISIBLE);
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getContext());
         locationManager = (LocationManager)getContext().getSystemService(Context.LOCATION_SERVICE);
         gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         polylines = new ArrayList<>();
         mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        buttonPressed = false;
+        gotRequest = false;
+        callAmbulance.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                radius=1;
+                driverFound = false;
+                limit= 10;
+
+                buttonPressed = true;
+                progressDialog = new ProgressDialog(getContext());
+                progressDialog.setMessage("Please wait..."); // Setting Message
+                progressDialog.setTitle("Finding Closest Driver"); // Setting Title
+                progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER); // Progress Dialog Style Spinner
+                progressDialog.show(); // Display Progress Dialog
+                progressDialog.setCancelable(false);
+
+
+                new CountDownTimer(2000, 1000) {
+                    @Override
+                    public void onFinish() {
+
+//                            getDirection(latLng);
+                        getNearestDriver();
+
+
+
+                    }
+                    @Override
+                    public void onTick(long millisUntilFinished) {
+                    }
+                }.start();
+            }
+        });
+
         return root;
     }
 
@@ -199,10 +235,12 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
 
+
         if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
            requestPermissions( new String[] {Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION}, 500);
             return;
         }
+
         mMap.setMyLocationEnabled(true);
         mMap.getUiSettings().setZoomControlsEnabled(true);
 
@@ -242,17 +280,15 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                     dataTransfer[2] = location.getLatitude();
                     dataTransfer[3] = location.getLongitude();
                     getNearbyPlacesData.execute(dataTransfer);
-                    Toast.makeText(getContext(), "Showing Nearby Hospitals", Toast.LENGTH_SHORT).show();
 
-                    new CountDownTimer(5000, 1000) {
+
+
+                    new CountDownTimer(2000, 1000) {
                         @Override
                         public void onFinish() {
 
 //                            getDirection(latLng);
-                            radius=1;
-                            driverFound = false;
-                            limit= 10;
-                            getNearestDriver();
+                            callAmbulance.setVisibility(View.VISIBLE);
 
 
 
@@ -267,11 +303,97 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         }
 
 
+        if(accountType.equals("driver"))
+        {
+            listenRequest();
+        }
+
+
+
+    }
+
+    private void listenRequest() {
+
+        databaseReferenceDriverWrite = firebaseDatabase.getReference("users").child(userId);
+        databaseReferenceDriverWrite.child("currentPassenger").setValue("");
+
+        listener1 = databaseReferenceDriverWrite.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String val = snapshot.child("currentPassenger").getValue().toString().trim();
+
+                if(val.length()>0)
+                {
+                    gotRequest = true;
+                    Toasty.success(getContext(),"Received User Request",Toasty.LENGTH_SHORT).show();
+                    progressDialog1 = new ProgressDialog(getContext());
+                    progressDialog1.setMessage("Finding best route"); // Setting Message
+                    progressDialog1.setTitle("Received a passenger request"); // Setting Title
+                    progressDialog1.setProgressStyle(ProgressDialog.STYLE_SPINNER); // Progress Dialog Style Spinner
+                    progressDialog1.show(); // Display Progress Dialog
+                    progressDialog1.setCancelable(false);
+                    DatabaseReference df = firebaseDatabase.getReference("passengerRequests").child(val);
+                    df.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            PassengerRequest passengerRequest = snapshot.getValue(PassengerRequest.class);
+                             driverCurrentLocation = pickupLocation;
+                             passengerCurrentLocation = new LatLng(passengerRequest.getPickupLat(),passengerRequest.getPickupLon());
+                             passengerDestinationLocation = new LatLng(passengerRequest.getHospitalLat(),passengerRequest.getHospitalLon());
+
+                            new CountDownTimer(2000, 1000) {
+                                @Override
+                                public void onFinish() {
+                                    MarkerOptions user = new MarkerOptions();
+                                    user.position(passengerCurrentLocation);
+                                    user.title(passengerRequest.getName()+" "+passengerRequest.getPhoneNumber());
+                                    user.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+                                    MarkerOptions hospital = new MarkerOptions();
+                                    hospital.position(passengerDestinationLocation);
+                                    hospital.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+                                    mMap.addMarker(user);
+                                    mMap.addMarker(hospital);
+                                    getDirection(driverCurrentLocation,passengerCurrentLocation,passengerDestinationLocation);
+                                }
+                                @Override
+                                public void onTick(long millisUntilFinished) {
+                                }
+                            }.start();
+
+
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+    }
+
+    private void getDirection(LatLng driverCurrentLocation, LatLng passengerCurrentLocation, LatLng passengerDestinationLocation) {
+        Routing routing = new Routing.Builder()
+                .travelMode(AbstractRouting.TravelMode.DRIVING)
+                .withListener(this)
+                .waypoints(driverCurrentLocation,passengerCurrentLocation,passengerDestinationLocation)
+                .key(getString(R.string.google_maps_key))
+                .build();
+        routing.execute();
+
+
 
     }
 
     private void getNearestDriver() {
         GeoFire geoFireGetDrivers = new GeoFire(databaseReference);
+
 
         GeoQuery geoQuery = geoFireGetDrivers.queryAtLocation(new GeoLocation(pickupLocation.latitude,pickupLocation.longitude),radius);
 
@@ -283,25 +405,64 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
                 if(!driverFound)
                 {
-                    driverFound = true;
-                    driverId = key;
 
                  listener =   databaseReferenceGetDriverInfo.child(key).addValueEventListener(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                            User driver = snapshot.getValue(User.class);
-                            MarkerOptions markerOptions = new MarkerOptions();
+                            String val = snapshot.child("currentPassenger").getValue().toString().trim();
+                            if (val.length() == 0) {
+                                driverFound = true;
+                                driverId = key;
 
-                            markerOptions.position(new LatLng(location.latitude,location.longitude));
-                            markerOptions.title(driver.getName() + "  "+ driver.getPhoneNumber());
-                            int height = 100;
-                            int width = 100;
-                            BitmapDrawable bitmapdraw = (BitmapDrawable)getResources().getDrawable(R.drawable.ambulance2);
-                            Bitmap b = bitmapdraw.getBitmap();
-                            Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
-                            markerOptions.icon(BitmapDescriptorFactory.fromBitmap(smallMarker));
-                            driverMarker = mMap.addMarker(markerOptions);
+                                buttonPressed = false;
+                                User driver = snapshot.getValue(User.class);
+                                MarkerOptions markerOptions = new MarkerOptions();
+
+                                markerOptions.position(new LatLng(location.latitude, location.longitude));
+                                markerOptions.title(driver.getName() + "  " + driver.getPhoneNumber());
+                                int height = 100;
+                                int width = 100;
+                                BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.ambulance2);
+                                Bitmap b = bitmapdraw.getBitmap();
+                                Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
+                                markerOptions.icon(BitmapDescriptorFactory.fromBitmap(smallMarker));
+                                driverMarker = mMap.addMarker(markerOptions);
+
+                                DatabaseReference df = firebaseDatabase.getReference("passengerRequests").child(userId);
+                                DatabaseReference df1 = firebaseDatabase.getReference("users").child(key);
+                                DatabaseReference df2 = firebaseDatabase.getReference("users").child(userId);
+                                df2.addValueEventListener(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                        PassengerRequest passengerRequest = new PassengerRequest(userId, snapshot.child("name").getValue().toString().trim(),
+                                                snapshot.child("phoneNumber").getValue().toString().trim(),
+                                                pickupLocation.latitude, pickupLocation.longitude,
+                                                nearest.latitude, nearest.longitude);
+                                        df.setValue(passengerRequest);
+                                        df1.child("currentPassenger").setValue(userId);
+
+                                        DatabaseReference df3 = firebaseDatabase.getReference("availableDrivers").child(key).child("l");
+
+
+                                    }
+
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError error) {
+
+                                    }
+                                });
+
+                                if (progressDialog != null) {
+                                    progressDialog.dismiss();
+                                    buttonPressed = false;
+                                }
+                            }
+                            else
+                            {
+                                databaseReferenceGetDriverInfo.removeEventListener(listener);
+                            }
+
                         }
 
                         @Override
@@ -317,11 +478,17 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
             @Override
             public void onKeyExited(String key) {
 
+//                if(driverMarker!=null)
+//                {
+//                    driverMarker.remove();
+//
+//                }
             }
 
             @Override
             public void onKeyMoved(String key, GeoLocation location) {
 
+                Toasty.success(getContext(),"driver car moved",Toasty.LENGTH_SHORT).show();
 
                  if(driverMarker!=null)
                  {
@@ -334,10 +501,37 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
             @Override
             public void onGeoQueryReady() {
 
-                if(!driverFound && radius<limit)
+                if(!driverFound && radius<=limit)
                 {
                     radius++;
                     getNearestDriver();
+                }
+                else if(radius>limit && radius!=100 && buttonPressed){
+                    radius = 100;
+
+                    if(progressDialog!=null)
+                    {
+                        progressDialog.dismiss();
+                        buttonPressed = false;
+
+                                        AlertDialog.Builder builder=new AlertDialog.Builder(getContext());
+                                        builder.setCancelable(true);
+                                        builder.setIcon(R.drawable.ic_baseline_info_24);
+                                        builder.setTitle("Not Found");
+                                        builder.setMessage("No driver is available at this moment");
+                                        builder.setInverseBackgroundForced(true);
+                                        builder.setPositiveButton("Close",new DialogInterface.OnClickListener(){
+
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which){
+                                                dialog.dismiss();
+                                            }
+                                        });
+
+                                        AlertDialog alert=builder.create();
+                                        alert.show();
+
+                    }
                 }
 
             }
@@ -355,16 +549,6 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         mGooleApiClient.connect();
     }
 
-    private void getDirection(LatLng userLatLng) {
-        Routing routing = new Routing.Builder()
-                .travelMode(AbstractRouting.TravelMode.DRIVING)
-                .withListener(this)
-                .waypoints(userLatLng,new LatLng(23.91326, 90.39630),nearest)
-                .key(getString(R.string.google_maps_key))
-                .build();
-        routing.execute();
-
-    }
 
 
     private String getUrl(double latitude , double longitude , String nearbyPlace)
@@ -429,13 +613,12 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
             polyOptions.addAll(route.get(i).getPoints());
             Polyline polyline = mMap.addPolyline(polyOptions);
             polylines.add(polyline);
-
-            Toast.makeText(getContext(),"Route "+ (i+1) +": distance - "+ route.get(i).getDistanceValue()+": duration - "+ route.get(i).getDurationValue(),Toast.LENGTH_SHORT).show();
         }
 
-
-
-
+        if(progressDialog1!=null)
+        {
+            progressDialog1.dismiss();
+        }
 
     }
 
@@ -486,11 +669,18 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     @Override
     public void onLocationChanged(@NonNull Location location) {
 
+
         if(accountType.equals("driver"))
         {
 
             GeoFire geoFire = new GeoFire(databaseReference);
             geoFire.setLocation(userId,new GeoLocation(location.getLatitude(),location.getLongitude()));
+
+            if(gotRequest)
+            {
+                getDirection(new LatLng(location.getLatitude(),location.getLongitude()),passengerCurrentLocation,passengerDestinationLocation);
+            }
+
         }
     }
 }

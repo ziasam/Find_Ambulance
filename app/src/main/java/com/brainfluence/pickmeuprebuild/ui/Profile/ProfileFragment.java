@@ -1,4 +1,4 @@
-package com.brainfluence.pickmeuprebuild.ui.DriverLogout;
+package com.brainfluence.pickmeuprebuild.ui.Profile;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -14,17 +14,17 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.brainfluence.pickmeuprebuild.R;
 
-public class SlideshowFragment extends Fragment {
+public class ProfileFragment extends Fragment {
 
-    private SlideshowViewModel slideshowViewModel;
+    private ProfileViewModel galleryViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        slideshowViewModel =
-                new ViewModelProvider(this).get(SlideshowViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_slideshow, container, false);
-        final TextView textView = root.findViewById(R.id.text_slideshow);
-        slideshowViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
+        galleryViewModel =
+                new ViewModelProvider(this).get(ProfileViewModel.class);
+        View root = inflater.inflate(R.layout.fragment_profile, container, false);
+        final TextView textView = root.findViewById(R.id.text_gallery);
+        galleryViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 textView.setText(s);
