@@ -92,7 +92,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     private SupportMapFragment mapFragment;
     private LocationManager locationManager;
     private Boolean gpsEnabled;
-    private int PROXIMITY_RADIUS = 5000;
+    private int PROXIMITY_RADIUS = 10000;
     private List<Polyline> polylines;
     private static final int[] COLORS = new int[]{R.color.purple_500};
     private SharedPreferences sharedPref;
@@ -120,9 +120,17 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         if (accountType.equals("driver")) {
             GeoFire geoFire = new GeoFire(databaseReference);
             geoFire.removeLocation(userId);
-            databaseReferenceDriverWrite.removeEventListener(listener1);
+            if(listener1!=null)
+            {
+                databaseReferenceDriverWrite.removeEventListener(listener1);
+            }
+
         } else {
-            databaseReferenceGetDriverInfo.removeEventListener(listener);
+            if(listener!=null)
+            {
+                databaseReferenceGetDriverInfo.removeEventListener(listener);
+            }
+
         }
     }
 
@@ -143,13 +151,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
     public void onResume() {
         super.onResume();
         if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+
             return;
         }
         fusedLocationProviderClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
@@ -192,6 +194,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
         mapFragment.getMapAsync(this);
         buttonPressed = false;
         gotRequest = false;
+        driverMarker = null;
         callAmbulance.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -212,10 +215,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                     @Override
                     public void onFinish() {
 
-//                            getDirection(latLng);
                         getNearestDriver();
-
-
 
                     }
                     @Override
@@ -419,15 +419,9 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                                 User driver = snapshot.getValue(User.class);
                                 MarkerOptions markerOptions = new MarkerOptions();
 
-                                markerOptions.position(new LatLng(location.latitude, location.longitude));
-                                markerOptions.title(driver.getName() + "  " + driver.getPhoneNumber());
-                                int height = 100;
-                                int width = 100;
-                                BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.ambulance2);
-                                Bitmap b = bitmapdraw.getBitmap();
-                                Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
-                                markerOptions.icon(BitmapDescriptorFactory.fromBitmap(smallMarker));
-                                driverMarker = mMap.addMarker(markerOptions);
+                                callAmbulance.setVisibility(View.INVISIBLE);
+                                callAmbulance.setClickable(false);
+
 
                                 DatabaseReference df = firebaseDatabase.getReference("passengerRequests").child(userId);
                                 DatabaseReference df1 = firebaseDatabase.getReference("users").child(key);
@@ -443,6 +437,47 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
                                         df1.child("currentPassenger").setValue(userId);
 
                                         DatabaseReference df3 = firebaseDatabase.getReference("availableDrivers").child(key).child("l");
+
+                                        df3.addValueEventListener(new ValueEventListener() {
+                                            @Override
+                                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                                List<Object> map = (List<Object>) snapshot.getValue();
+                                                LatLng updatedLoc = new LatLng(Double.parseDouble(map.get(0).toString()),Double.parseDouble(map.get(1).toString()));
+                                                float[] results = new float[10];
+                                                Location.distanceBetween(pickupLocation.latitude,pickupLocation.longitude,updatedLoc.latitude,updatedLoc.longitude,results);
+
+                                                if(results[0]<=100)
+                                                {
+                                                    Toasty.success(getContext(),"Driver arrived",Toasty.LENGTH_SHORT).show();
+                                                }
+
+                                                if(driverMarker!=null)
+                                                {
+                                                    driverMarker.setPosition(updatedLoc);
+                                                }
+                                                else {
+                                                    markerOptions.position(updatedLoc);
+                                                    markerOptions.title(driver.getName() + "  " + driver.getPhoneNumber());
+                                                    int height = 100;
+                                                    int width = 100;
+                                                    BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.ambulance2);
+                                                    Bitmap b = bitmapdraw.getBitmap();
+                                                    Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
+                                                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(smallMarker));
+                                                    driverMarker = mMap.addMarker(markerOptions);
+                                                }
+
+
+
+
+
+                                            }
+
+                                            @Override
+                                            public void onCancelled(@NonNull DatabaseError error) {
+
+                                            }
+                                        });
 
 
                                     }
@@ -488,13 +523,8 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
             @Override
             public void onKeyMoved(String key, GeoLocation location) {
 
-                Toasty.success(getContext(),"driver car moved",Toasty.LENGTH_SHORT).show();
 
-                 if(driverMarker!=null)
-                 {
-                     driverMarker.setPosition(new LatLng(location.latitude,location.longitude));
 
-                 }
 
             }
 
@@ -602,7 +632,7 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
         polylines = new ArrayList<>();
         //add route(s) to the map.
-        for (int i = 0; i <route.size(); i++) {
+        for (int i = 0; i <1; i++) {
 
             //In case of more than 5 alternative routes
             int colorIndex = i % COLORS.length;
@@ -683,4 +713,6 @@ public class HomeFragment extends Fragment implements OnMapReadyCallback, Google
 
         }
     }
+
+
 }
